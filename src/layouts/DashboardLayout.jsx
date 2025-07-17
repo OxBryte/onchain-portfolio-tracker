@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const DashboardLayout = ({ children }) => (
   <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -9,24 +10,27 @@ const DashboardLayout = ({ children }) => (
       <nav>
         <ul style={{ listStyle: "none", padding: 0 }}>
           <li>
-            <a href="/" style={{ color: "#fff" }}>
+            <Link to="/" style={{ color: "#fff", textDecoration: "none" }}>
               Dashboard
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/nfts" style={{ color: "#fff" }}>
+            <Link to="/nfts" style={{ color: "#fff", textDecoration: "none" }}>
               NFTs
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/defi" style={{ color: "#fff" }}>
+            <Link to="/defi" style={{ color: "#fff", textDecoration: "none" }}>
               DeFi
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/settings" style={{ color: "#fff" }}>
+            <Link
+              to="/settings"
+              style={{ color: "#fff", textDecoration: "none" }}
+            >
               Settings
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>
