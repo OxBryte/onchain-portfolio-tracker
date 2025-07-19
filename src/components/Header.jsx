@@ -1,8 +1,20 @@
 import React from "react";
 import { useTheme } from "../context/ThemeContext";
+import { useWalletContext } from "../context/WalletContext";
 
 const Header = () => {
   const { isDark, toggleTheme } = useTheme();
+  const {
+    isConnected,
+    walletAddress,
+    getTotalValue,
+    getNetworkBalance,
+    formatAddress,
+    disconnectWallet,
+  } = useWalletContext();
+
+  const totalValue = getTotalValue();
+  const ethereumBalance = getNetworkBalance("ethereum");
 
   return (
     <header
@@ -56,7 +68,7 @@ const Header = () => {
                 isDark ? "text-white" : "text-gray-900"
               }`}
             >
-              $0.00
+              ${totalValue.toFixed(2)}
             </p>
           </div>
           <div className="text-center">
@@ -75,14 +87,16 @@ const Header = () => {
                 isDark ? "text-gray-400" : "text-gray-500"
               }`}
             >
-              Assets
+              ETH Balance
             </p>
             <p
               className={`font-semibold ${
                 isDark ? "text-white" : "text-gray-900"
               }`}
             >
-              0
+              {ethereumBalance
+                ? `${parseFloat(ethereumBalance.balance).toFixed(4)} ETH`
+                : "0.0000 ETH"}
             </p>
           </div>
         </div>
@@ -153,15 +167,39 @@ const Header = () => {
           </button>
 
           {/* Wallet Connection */}
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              isDark
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-blue-500 hover:bg-blue-600 text-white"
-            }`}
-          >
-            Connect Wallet
-          </button>
+          {isConnected ? (
+            <div className="flex items-center space-x-2">
+              <div
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  isDark
+                    ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                    : "bg-green-100 text-green-800 border border-green-200"
+                }`}
+              >
+                {formatAddress(walletAddress)}
+              </div>
+              <button
+                onClick={disconnectWallet}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isDark
+                    ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                }`}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                isDark
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+            >
+              Connect Wallet
+            </button>
+          )}
         </div>
       </div>
     </header>

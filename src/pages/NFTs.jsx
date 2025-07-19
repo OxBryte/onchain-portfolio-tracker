@@ -1,80 +1,36 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useWalletContext } from "../context/WalletContext";
 
 const NFTs = () => {
   const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [nfts, setNfts] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const walletAddress = searchParams.get("walletAddress");
+  const {
+    isConnected,
+    walletAddress,
+    getNetworkNFTs,
+    getSupportedNetworks,
+    formatAddress,
+  } = useWalletContext();
+
+  const currentWalletAddress = searchParams.get("walletAddress");
 
   useEffect(() => {
-    if (walletAddress) {
-      fetchNFTs();
+    if (currentWalletAddress && !isConnected) {
+      navigate("/?walletAddress=");
     }
-  }, [walletAddress]);
-
-  const fetchNFTs = async () => {
-    setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      // Mock NFT data
-      const mockNFTs = [
-        {
-          id: 1,
-          name: "Bored Ape #1234",
-          collection: "Bored Ape Yacht Club",
-          image: "https://via.placeholder.com/300/6366f1/ffffff?text=BAYC",
-          floorPrice: "25.5 ETH",
-          value: "28.2 ETH",
-          tokenId: "1234",
-          contractAddress: "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
-        },
-        {
-          id: 2,
-          name: "CryptoPunk #5678",
-          collection: "CryptoPunks",
-          image: "https://via.placeholder.com/300/10b981/ffffff?text=PUNK",
-          floorPrice: "45.0 ETH",
-          value: "52.1 ETH",
-          tokenId: "5678",
-          contractAddress: "0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb",
-        },
-        {
-          id: 3,
-          name: "Doodle #9012",
-          collection: "Doodles",
-          image: "https://via.placeholder.com/300/8b5cf6/ffffff?text=DOODLE",
-          floorPrice: "3.2 ETH",
-          value: "3.8 ETH",
-          tokenId: "9012",
-          contractAddress: "0x8a90cab2b38dba80c64b7734e58ee1db38b8992e",
-        },
-        {
-          id: 4,
-          name: "Azuki #3456",
-          collection: "Azuki",
-          image: "https://via.placeholder.com/300/ef4444/ffffff?text=AZUKI",
-          floorPrice: "12.5 ETH",
-          value: "14.2 ETH",
-          tokenId: "3456",
-          contractAddress: "0xed5af388653567af7a388d4b3b8c3b8b8b8b8b8b",
-        },
-      ];
-      setNfts(mockNFTs);
-      setLoading(false);
-    }, 1500);
-  };
+  }, [currentWalletAddress, isConnected, navigate]);
 
   const handleSearchWallet = () => {
     navigate("/?walletAddress=");
   };
 
   // Show search prompt if no wallet address
-  if (!walletAddress) {
+  if (!currentWalletAddress || !isConnected) {
     return (
       <div className="space-y-6">
         <div
@@ -143,6 +99,34 @@ const NFTs = () => {
     );
   }
 
+  // Get all NFTs from all networks
+  const getAllNFTs = () => {
+    const allNFTs = [];
+    const networks = getSupportedNetworks();
+
+    networks.forEach((network) => {
+      const networkNFTs = getNetworkNFTs(network);
+      networkNFTs.forEach((nft) => {
+        allNFTs.push({
+          ...nft,
+          network,
+          // Add some metadata for display
+          name: `NFT #${nft.tokenId}`,
+          collection: `${
+            network.charAt(0).toUpperCase() + network.slice(1)
+          } Collection`,
+          image: `https://via.placeholder.com/300/6366f1/ffffff?text=${network.toUpperCase()}`,
+          floorPrice: "0.1 ETH",
+          value: "0.15 ETH",
+        });
+      });
+    });
+
+    return allNFTs;
+  };
+
+  const nfts = getAllNFTs();
+
   return (
     <div className="space-y-6">
       <div
@@ -160,8 +144,7 @@ const NFTs = () => {
               NFT Gallery
             </h1>
             <p className={isDark ? "text-gray-300" : "text-gray-600"}>
-              NFTs for wallet: {walletAddress.slice(0, 8)}...
-              {walletAddress.slice(-6)}
+              NFTs for wallet: {formatAddress(currentWalletAddress)}
             </p>
           </div>
           <div className="text-right">
@@ -220,73 +203,131 @@ const NFTs = () => {
           </div>
         </div>
       ) : nfts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {nfts.map((nft) => (
-            <div
-              key={nft.id}
-              className={`rounded-lg border overflow-hidden transition-transform hover:scale-105 ${
-                isDark
-                  ? "bg-gray-800 border-gray-700"
-                  : "bg-white border-gray-200"
+        <>
+          {/* Network Filter */}
+          <div
+            className={`rounded-lg p-4 border ${
+              isDark
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            <h3
+              className={`text-lg font-semibold mb-3 ${
+                isDark ? "text-white" : "text-gray-900"
               }`}
             >
-              <div className="relative">
-                <img
-                  src={nft.image}
-                  alt={nft.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div
-                  className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
-                    isDark
-                      ? "bg-gray-900/80 text-white"
-                      : "bg-white/80 text-gray-900"
-                  }`}
-                >
-                  #{nft.tokenId}
-                </div>
-              </div>
-              <div className="p-4">
-                <h3
-                  className={`font-semibold mb-1 truncate ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {nft.name}
-                </h3>
-                <p
-                  className={`text-sm mb-3 ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
-                  {nft.collection}
-                </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span
-                      className={isDark ? "text-gray-400" : "text-gray-500"}
-                    >
-                      Floor Price:
-                    </span>
-                    <span className="font-medium text-green-500">
-                      {nft.floorPrice}
-                    </span>
+              Networks
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {getSupportedNetworks().map((network) => {
+                const networkNFTs = getNetworkNFTs(network);
+                return (
+                  <div
+                    key={network}
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      networkNFTs.length > 0
+                        ? "bg-purple-100 text-purple-800"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {network.charAt(0).toUpperCase() + network.slice(1)} (
+                    {networkNFTs.length})
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span
-                      className={isDark ? "text-gray-400" : "text-gray-500"}
-                    >
-                      Estimated Value:
-                    </span>
-                    <span className="font-medium text-blue-500">
-                      {nft.value}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </div>
+
+          {/* NFT Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {nfts.map((nft, index) => (
+              <div
+                key={`${nft.network}-${nft.tokenId}-${index}`}
+                className={`rounded-lg border overflow-hidden transition-transform hover:scale-105 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700"
+                    : "bg-white border-gray-200"
+                }`}
+              >
+                <div className="relative">
+                  <img
+                    src={nft.image}
+                    alt={nft.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div
+                    className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+                      isDark
+                        ? "bg-gray-900/80 text-white"
+                        : "bg-white/80 text-gray-900"
+                    }`}
+                  >
+                    #{nft.tokenId}
+                  </div>
+                  <div
+                    className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium bg-blue-500 text-white`}
+                  >
+                    {nft.network.toUpperCase()}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3
+                    className={`font-semibold mb-1 truncate ${
+                      isDark ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {nft.name}
+                  </h3>
+                  <p
+                    className={`text-sm mb-3 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {nft.collection}
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span
+                        className={isDark ? "text-gray-400" : "text-gray-500"}
+                      >
+                        Floor Price:
+                      </span>
+                      <span className="font-medium text-green-500">
+                        {nft.floorPrice}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span
+                        className={isDark ? "text-gray-400" : "text-gray-500"}
+                      >
+                        Estimated Value:
+                      </span>
+                      <span className="font-medium text-blue-500">
+                        {nft.value}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span
+                        className={isDark ? "text-gray-400" : "text-gray-500"}
+                      >
+                        Contract:
+                      </span>
+                      <span
+                        className={`font-mono text-xs ${
+                          isDark ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        {nft.contractAddress.slice(0, 6)}...
+                        {nft.contractAddress.slice(-4)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <div
           className={`rounded-lg p-8 border text-center ${

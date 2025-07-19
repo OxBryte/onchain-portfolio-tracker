@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useWalletContext } from "../context/WalletContext";
 
 const Dashboard = () => {
   const { isDark } = useTheme();
@@ -9,28 +10,62 @@ const Dashboard = () => {
   const [walletAddress, setWalletAddress] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
+  const {
+    connectWallet,
+    disconnectWallet,
+    isConnected,
+    isLoading: walletLoading,
+    error: walletError,
+    portfolio,
+    getTotalValue,
+    getNetworkBalance,
+    getSupportedNetworks,
+    isValidAddress,
+    formatAddress,
+  } = useWalletContext();
+
   const currentWalletAddress = searchParams.get("walletAddress");
 
   useEffect(() => {
     if (currentWalletAddress) {
       setWalletAddress(currentWalletAddress);
+      // Connect wallet if not already connected
+      if (!isConnected) {
+        handleConnectWallet(currentWalletAddress);
+      }
     }
-  }, [currentWalletAddress]);
+  }, [currentWalletAddress, isConnected]);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (walletAddress.trim()) {
       setIsSearching(true);
-      // Simulate API call delay
-      setTimeout(() => {
+      const success = await handleConnectWallet(walletAddress.trim());
+      if (success) {
         navigate(`/?walletAddress=${walletAddress.trim()}`);
-        setIsSearching(false);
-      }, 1000);
+      }
+      setIsSearching(false);
+    }
+  };
+
+  const handleConnectWallet = async (address) => {
+    if (!isValidAddress(address)) {
+      alert("Please enter a valid Ethereum address");
+      return false;
+    }
+
+    try {
+      const success = await connectWallet(address);
+      return success;
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+      return false;
     }
   };
 
   const handleClear = () => {
     setWalletAddress("");
+    disconnectWallet();
     navigate("/");
   };
 
@@ -39,7 +74,11 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div
-          className={`w-full `}
+          className={`w-full max-w-2xl p-12 rounded-2xl border shadow-2xl ${
+            isDark
+              ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 shadow-gray-900/50"
+              : "bg-gradient-to-br from-white to-gray-50 border-gray-200 shadow-gray-200/50"
+          }`}
         >
           <div className="text-center mb-10">
             <div
@@ -156,7 +195,7 @@ const Dashboard = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Searching...
+                  Connecting...
                 </div>
               ) : (
                 "Search Portfolio"
@@ -186,9 +225,11 @@ const Dashboard = () => {
               Dashboard
             </h1>
             <p className={isDark ? "text-gray-300" : "text-gray-600"}>
-              Portfolio for wallet: {currentWalletAddress.slice(0, 8)}...
-              {currentWalletAddress.slice(-6)}
+              Portfolio for wallet: {formatAddress(currentWalletAddress)}
             </p>
+            {walletError && (
+              <p className="text-red-500 text-sm mt-2">{walletError}</p>
+            )}
           </div>
           <button
             onClick={handleClear}
@@ -203,67 +244,192 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {walletLoading ? (
         <div
-          className={`rounded-lg p-6 border ${
+          className={`rounded-lg p-8 border text-center ${
             isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           }`}
         >
-          <h3
-            className={`text-lg font-semibold mb-2 ${
-              isDark ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Total Portfolio Value
-          </h3>
-          <p className="text-2xl font-bold text-green-500">$0.00</p>
-          <p
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
-          >
-            Loading portfolio data...
-          </p>
+          <div className="flex items-center justify-center">
+            <svg
+              className="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span
+              className={`text-lg ${
+                isDark ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              Loading portfolio data...
+            </span>
+          </div>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              className={`rounded-lg p-6 border ${
+                isDark
+                  ? "bg-gray-800 border-gray-700"
+                  : "bg-white border-gray-200"
+              }`}
+            >
+              <h3
+                className={`text-lg font-semibold mb-2 ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Total Portfolio Value
+              </h3>
+              <p className="text-2xl font-bold text-green-500">
+                ${getTotalValue().toFixed(2)}
+              </p>
+              <p
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                Across {getSupportedNetworks().length} networks
+              </p>
+            </div>
 
-        <div
-          className={`rounded-lg p-6 border ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-          }`}
-        >
-          <h3
-            className={`text-lg font-semibold mb-2 ${
-              isDark ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Assets
-          </h3>
-          <p className="text-2xl font-bold text-blue-500">0</p>
-          <p
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
-          >
-            Different tokens
-          </p>
-        </div>
+            <div
+              className={`rounded-lg p-6 border ${
+                isDark
+                  ? "bg-gray-800 border-gray-700"
+                  : "bg-white border-gray-200"
+              }`}
+            >
+              <h3
+                className={`text-lg font-semibold mb-2 ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Networks
+              </h3>
+              <p className="text-2xl font-bold text-blue-500">
+                {getSupportedNetworks().length}
+              </p>
+              <p
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                Supported chains
+              </p>
+            </div>
 
-        <div
-          className={`rounded-lg p-6 border ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-          }`}
-        >
-          <h3
-            className={`text-lg font-semibold mb-2 ${
-              isDark ? "text-white" : "text-gray-900"
+            <div
+              className={`rounded-lg p-6 border ${
+                isDark
+                  ? "bg-gray-800 border-gray-700"
+                  : "bg-white border-gray-200"
+              }`}
+            >
+              <h3
+                className={`text-lg font-semibold mb-2 ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Connection Status
+              </h3>
+              <p
+                className={`text-2xl font-bold ${
+                  isConnected ? "text-green-500" : "text-red-500"
+                }`}
+              >
+                {isConnected ? "Connected" : "Disconnected"}
+              </p>
+              <p
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                {isConnected ? "Wallet connected" : "No wallet connected"}
+              </p>
+            </div>
+          </div>
+
+          {/* Network Balances */}
+          <div
+            className={`rounded-lg p-6 border ${
+              isDark
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
             }`}
           >
-            NFTs
-          </h3>
-          <p className="text-2xl font-bold text-purple-500">0</p>
-          <p
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
-          >
-            In your collection
-          </p>
-        </div>
-      </div>
+            <h3
+              className={`text-xl font-semibold mb-4 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Network Balances
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {getSupportedNetworks().map((network) => {
+                const balance = getNetworkBalance(network);
+                return (
+                  <div
+                    key={network}
+                    className={`p-4 rounded-lg border ${
+                      isDark
+                        ? "bg-gray-700 border-gray-600"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <h4
+                      className={`font-medium mb-2 ${
+                        isDark ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {network.charAt(0).toUpperCase() + network.slice(1)}
+                    </h4>
+                    {balance ? (
+                      <>
+                        <p className="text-lg font-bold text-green-500">
+                          {parseFloat(balance.balance).toFixed(4)}{" "}
+                          {balance.symbol}
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            isDark ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          ${balance.value.toFixed(2)}
+                        </p>
+                      </>
+                    ) : (
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        No balance
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
