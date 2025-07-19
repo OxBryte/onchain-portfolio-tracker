@@ -14,6 +14,17 @@ export const NETWORKS = {
       decimals: 18,
     },
   },
+  base: {
+    name: "Base",
+    chainId: 8453,
+    rpcUrl: "https://mainnet.base.org",
+    blockExplorer: "https://basescan.org",
+    nativeCurrency: {
+      name: "Ether",
+      symbol: "ETH",
+      decimals: 18,
+    },
+  },
   polygon: {
     name: "Polygon",
     chainId: 137,
@@ -139,6 +150,9 @@ class Web3Service {
           "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", // BAYC
           "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BbB", // CryptoPunks
           "0x8a90CAb2b38dba80c64b7734e58eE1dB38B8992e", // Doodles
+        ],
+        base: [
+          // Add Base NFT contracts as they become popular
         ],
         polygon: [
           // Add Polygon NFT contracts
