@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AppRoutes from "./routes/AppRoutes";
 import { ThemeProvider } from "./context/ThemeContext";
+import { WalletProvider } from "./context/WalletContext";
 import "./App.css";
 
 function App() {
@@ -23,7 +24,9 @@ function App() {
 
   return (
     <ThemeProvider>
-      <AppRoutes />
+      <WalletProvider>
+        <AppRoutes />
+      </WalletProvider>
     </ThemeProvider>
   );
 }
