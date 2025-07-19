@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import Header from "../components/Header";
 
 const DashboardLayout = ({ children }) => {
   const { isDark } = useTheme();
@@ -33,54 +34,58 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div
-      className={`flex min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+      className={`flex flex-col min-h-screen ${
+        isDark ? "bg-gray-900" : "bg-gray-50"
+      }`}
     >
-      <aside
-        className={`w-56 p-6 border-r ${
-          isDark
-            ? "bg-gray-800 text-gray-100 border-gray-700"
-            : "bg-white text-gray-800 border-gray-200"
-        }`}
-      >
-        <h2
-          className={`text-xl font-bold mb-6 ${
-            isDark ? "text-white" : "text-gray-900"
+      {/* Header */}
+      <Header />
+
+      {/* Main Content */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside
+          className={`w-56 p-6 border-r ${
+            isDark
+              ? "bg-gray-800 text-gray-100 border-gray-700"
+              : "bg-white text-gray-800 border-gray-200"
           }`}
         >
-          Portfolio Tracker
-        </h2>
-        <nav>
-          <ul className="space-y-4">
-            <li>
-              <Link to="/" className={getLinkClasses("/")}>
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link to="/nfts" className={getLinkClasses("/nfts")}>
-                NFTs
-              </Link>
-            </li>
-            <li>
-              <Link to="/defi" className={getLinkClasses("/defi")}>
-                DeFi
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings" className={getLinkClasses("/settings")}>
-                Settings
-              </Link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-      <main
-        className={`flex-1 p-8 ${
-          isDark ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
-        }`}
-      >
-        {children}
-      </main>
+          <nav>
+            <ul className="space-y-4">
+              <li>
+                <Link to="/" className={getLinkClasses("/")}>
+                  Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link to="/nfts" className={getLinkClasses("/nfts")}>
+                  NFTs
+                </Link>
+              </li>
+              <li>
+                <Link to="/defi" className={getLinkClasses("/defi")}>
+                  DeFi
+                </Link>
+              </li>
+              <li>
+                <Link to="/settings" className={getLinkClasses("/settings")}>
+                  Settings
+                </Link>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+
+        {/* Main Content Area */}
+        <main
+          className={`flex-1 p-8 ${
+            isDark ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
+          }`}
+        >
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

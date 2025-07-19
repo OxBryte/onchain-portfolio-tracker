@@ -39,11 +39,7 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div
-          className={`w-full max-w-2xl p-12 rounded-2xl border shadow-2xl ${
-            isDark
-              ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-600 shadow-gray-900/50"
-              : "bg-gradient-to-br from-white to-gray-50 border-gray-200 shadow-gray-200/50"
-          }`}
+          className={`w-full `}
         >
           <div className="text-center mb-10">
             <div
