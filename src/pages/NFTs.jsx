@@ -8,29 +8,37 @@ const NFTs = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState("all");
 
   const {
     isConnected,
     walletAddress,
+    connectWallet,
     getNetworkNFTs,
     getSupportedNetworks,
     formatAddress,
+    isLoading: walletLoading,
+    error: walletError,
   } = useWalletContext();
 
   const currentWalletAddress = searchParams.get("walletAddress");
 
+  // Auto-connect wallet if address is provided in URL
   useEffect(() => {
-    if (currentWalletAddress && !isConnected) {
-      navigate("/?walletAddress=");
+    if (currentWalletAddress && !isConnected && !walletLoading) {
+      setLoading(true);
+      connectWallet(currentWalletAddress).finally(() => {
+        setLoading(false);
+      });
     }
-  }, [currentWalletAddress, isConnected, navigate]);
+  }, [currentWalletAddress, isConnected, connectWallet, walletLoading]);
 
   const handleSearchWallet = () => {
     navigate("/?walletAddress=");
   };
 
   // Show search prompt if no wallet address
-  if (!currentWalletAddress || !isConnected) {
+  if (!currentWalletAddress || (!isConnected && !loading)) {
     return (
       <div className="space-y-6">
         <div
@@ -46,7 +54,7 @@ const NFTs = () => {
             NFT Gallery
           </h1>
           <p className={isDark ? "text-gray-300" : "text-gray-600"}>
-            View and manage your NFT collection.
+            View and manage your NFT collection across multiple blockchains.
           </p>
         </div>
 
@@ -70,7 +78,7 @@ const NFTs = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"
               />
             </svg>
           </div>
@@ -99,33 +107,172 @@ const NFTs = () => {
     );
   }
 
-  // Get all NFTs from all networks
+  // Get all NFTs from all networks or filtered by network
   const getAllNFTs = () => {
     const allNFTs = [];
     const networks = getSupportedNetworks();
 
     networks.forEach((network) => {
-      const networkNFTs = getNetworkNFTs(network);
-      networkNFTs.forEach((nft) => {
-        allNFTs.push({
-          ...nft,
-          network,
-          // Add some metadata for display
-          name: `NFT #${nft.tokenId}`,
-          collection: `${
-            network.charAt(0).toUpperCase() + network.slice(1)
-          } Collection`,
-          image: `https://via.placeholder.com/300/6366f1/ffffff?text=${network.toUpperCase()}`,
-          floorPrice: "0.1 ETH",
-          value: "0.15 ETH",
+      if (selectedNetwork === "all" || selectedNetwork === network) {
+        const networkNFTs = getNetworkNFTs(network);
+        networkNFTs.forEach((nft) => {
+          allNFTs.push({
+            ...nft,
+            network,
+            // Enhanced metadata for display
+            name: nft.name || `NFT #${nft.tokenId}`,
+            collection:
+              nft.collection ||
+              `${
+                network.charAt(0).toUpperCase() + network.slice(1)
+              } Collection`,
+            image:
+              nft.image ||
+              `https://via.placeholder.com/300/6366f1/ffffff?text=${network.toUpperCase()}`,
+            floorPrice: nft.floorPrice || "0.1 ETH",
+            value: nft.value || "0.15 ETH",
+            rarity: nft.rarity || "Common",
+            attributes: nft.attributes || [],
+          });
         });
-      });
+      }
     });
 
     return allNFTs;
   };
 
   const nfts = getAllNFTs();
+  const networks = getSupportedNetworks();
+
+  // Show loading state
+  if (loading || walletLoading) {
+    return (
+      <div className="space-y-6">
+        <div
+          className={`rounded-lg p-6 border ${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          }`}
+        >
+          <h1
+            className={`text-3xl font-bold mb-2 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            NFT Gallery
+          </h1>
+          <p className={isDark ? "text-gray-300" : "text-gray-600"}>
+            Loading NFT collection...
+          </p>
+        </div>
+
+        <div
+          className={`rounded-lg p-8 border text-center ${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-center">
+            <svg
+              className="animate-spin -ml-1 mr-3 h-8 w-8 text-purple-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span
+              className={`text-lg ${
+                isDark ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
+              Fetching NFTs from blockchain...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (walletError) {
+    return (
+      <div className="space-y-6">
+        <div
+          className={`rounded-lg p-6 border ${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          }`}
+        >
+          <h1
+            className={`text-3xl font-bold mb-2 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            NFT Gallery
+          </h1>
+          <p className={isDark ? "text-gray-300" : "text-gray-600"}>
+            Error loading NFT collection
+          </p>
+        </div>
+
+        <div
+          className={`rounded-lg p-8 border text-center ${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          }`}
+        >
+          <div
+            className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+              isDark ? "bg-red-600/20" : "bg-red-100"
+            }`}
+          >
+            <svg
+              className="w-8 h-8 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3
+            className={`text-xl font-semibold mb-2 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Connection Error
+          </h3>
+          <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+            {walletError}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              isDark
+                ? "bg-purple-600 hover:bg-purple-700 text-white"
+                : "bg-purple-500 hover:bg-purple-600 text-white"
+            }`}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -166,43 +313,7 @@ const NFTs = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div
-          className={`rounded-lg p-8 border text-center ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-          }`}
-        >
-          <div className="flex items-center justify-center">
-            <svg
-              className="animate-spin -ml-1 mr-3 h-8 w-8 text-purple-500"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <span
-              className={`text-lg ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}
-            >
-              Loading NFTs...
-            </span>
-          </div>
-        </div>
-      ) : nfts.length > 0 ? (
+      {nfts.length > 0 ? (
         <>
           {/* Network Filter */}
           <div
@@ -217,23 +328,42 @@ const NFTs = () => {
                 isDark ? "text-white" : "text-gray-900"
               }`}
             >
-              Networks
+              Filter by Network
             </h3>
             <div className="flex flex-wrap gap-2">
-              {getSupportedNetworks().map((network) => {
+              <button
+                onClick={() => setSelectedNetwork("all")}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  selectedNetwork === "all"
+                    ? "bg-purple-600 text-white"
+                    : isDark
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                All Networks ({nfts.length})
+              </button>
+              {networks.map((network) => {
                 const networkNFTs = getNetworkNFTs(network);
                 return (
-                  <div
+                  <button
                     key={network}
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      networkNFTs.length > 0
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-gray-100 text-gray-600"
+                    onClick={() => setSelectedNetwork(network)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      selectedNetwork === network
+                        ? "bg-purple-600 text-white"
+                        : networkNFTs.length > 0
+                        ? isDark
+                          ? "bg-purple-100/20 text-purple-300 hover:bg-purple-100/30"
+                          : "bg-purple-100 text-purple-800 hover:bg-purple-200"
+                        : isDark
+                        ? "bg-gray-700 text-gray-400"
+                        : "bg-gray-100 text-gray-500"
                     }`}
                   >
                     {network.charAt(0).toUpperCase() + network.slice(1)} (
                     {networkNFTs.length})
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -244,10 +374,10 @@ const NFTs = () => {
             {nfts.map((nft, index) => (
               <div
                 key={`${nft.network}-${nft.tokenId}-${index}`}
-                className={`rounded-lg border overflow-hidden transition-transform hover:scale-105 ${
+                className={`rounded-lg border overflow-hidden transition-all hover:scale-105 hover:shadow-lg ${
                   isDark
-                    ? "bg-gray-800 border-gray-700"
-                    : "bg-white border-gray-200"
+                    ? "bg-gray-800 border-gray-700 hover:border-purple-500"
+                    : "bg-white border-gray-200 hover:border-purple-300"
                 }`}
               >
                 <div className="relative">
@@ -255,6 +385,9 @@ const NFTs = () => {
                     src={nft.image}
                     alt={nft.name}
                     className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      e.target.src = `https://via.placeholder.com/300/6366f1/ffffff?text=${nft.network.toUpperCase()}`;
+                    }}
                   />
                   <div
                     className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
@@ -270,6 +403,21 @@ const NFTs = () => {
                   >
                     {nft.network.toUpperCase()}
                   </div>
+                  {nft.rarity && (
+                    <div
+                      className={`absolute bottom-2 left-2 px-2 py-1 rounded-full text-xs font-medium ${
+                        nft.rarity === "Legendary"
+                          ? "bg-yellow-500 text-white"
+                          : nft.rarity === "Epic"
+                          ? "bg-purple-500 text-white"
+                          : nft.rarity === "Rare"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-500 text-white"
+                      }`}
+                    >
+                      {nft.rarity}
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
                   <h3
@@ -322,6 +470,42 @@ const NFTs = () => {
                         {nft.contractAddress.slice(-4)}
                       </span>
                     </div>
+                    {nft.attributes && nft.attributes.length > 0 && (
+                      <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <p
+                          className={`text-xs mb-1 ${
+                            isDark ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          Attributes:
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {nft.attributes.slice(0, 3).map((attr, idx) => (
+                            <span
+                              key={idx}
+                              className={`px-1 py-0.5 rounded text-xs ${
+                                isDark
+                                  ? "bg-gray-700 text-gray-300"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              {attr.trait_type}: {attr.value}
+                            </span>
+                          ))}
+                          {nft.attributes.length > 3 && (
+                            <span
+                              className={`px-1 py-0.5 rounded text-xs ${
+                                isDark
+                                  ? "bg-gray-700 text-gray-300"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              +{nft.attributes.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -361,8 +545,18 @@ const NFTs = () => {
             No NFTs Found
           </h3>
           <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-            This wallet doesn't have any NFTs or they're not visible yet.
+            This wallet doesn't have any NFTs on the selected networks or
+            they're not visible yet.
           </p>
+          <div className="mt-4">
+            <p
+              className={`text-sm ${
+                isDark ? "text-gray-500" : "text-gray-400"
+              }`}
+            >
+              Supported networks: {networks.join(", ")}
+            </p>
+          </div>
         </div>
       )}
     </div>
