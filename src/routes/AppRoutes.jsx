@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Dashboard from "../pages/Dashboard";
 import NFTs from "../pages/NFTs";
+import Transactions from "../pages/Transactions";
 import DeFi from "../pages/DeFi";
 import Settings from "../pages/Settings";
 import NotFound from "../pages/NotFound";
@@ -23,6 +24,14 @@ const AppRoutes = () => (
         element={
           <DashboardLayout>
             <NFTs />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/transactions"
+        element={
+          <DashboardLayout>
+            <Transactions />
           </DashboardLayout>
         }
       />

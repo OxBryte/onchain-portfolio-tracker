@@ -64,6 +64,14 @@ const DashboardLayout = ({ children }) => {
                 </Link>
               </li>
               <li>
+                <Link
+                  to="/transactions"
+                  className={getLinkClasses("/transactions")}
+                >
+                  Transactions
+                </Link>
+              </li>
+              <li>
                 <Link to="/defi" className={getLinkClasses("/defi")}>
                   DeFi
                 </Link>
