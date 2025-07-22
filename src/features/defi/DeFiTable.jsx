@@ -21,6 +21,8 @@ const DeFiTable = () => {
         console.log(data);
         
       } catch (err) {
+        console.log(err);
+        
         setError("Failed to fetch DeFi token data.");
       } finally {
         setLoading(false);

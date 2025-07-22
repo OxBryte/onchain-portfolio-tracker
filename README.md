@@ -29,6 +29,7 @@ The app is privacy-first: no login required, and no custody of user funds.
 - **Auto-refresh**: Portfolio data updates every 30 seconds
 - **Network Filtering**: Filter NFTs and transactions by blockchain
 - **Pagination**: For large transaction lists
+- **DEFI**: Dexscreener Data and token pool
 
 ## Main Pages
 
