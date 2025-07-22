@@ -18,7 +18,7 @@ const Header = () => {
 
   return (
     <header
-      className={`border-b ${
+      className={`border-b sticky top-0 ${
         isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
       }`}
     >
