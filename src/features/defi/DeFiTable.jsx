@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 
-const BASE_API_URL = "https://api.dexscreener.com/latest/dex/pairs/base";
+const BASE_API_URL = "https://api.dexscreener.com/token-profiles/latest/v1";
 
 const DeFiTable = () => {
   const { isDark } = useTheme();
@@ -17,6 +17,9 @@ const DeFiTable = () => {
         const res = await fetch(BASE_API_URL);
         const data = await res.json();
         setTokens(data.pairs || []);
+
+        console.log(data);
+        
       } catch (err) {
         setError("Failed to fetch DeFi token data.");
       } finally {
