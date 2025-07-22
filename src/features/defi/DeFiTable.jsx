@@ -16,7 +16,7 @@ const DeFiTable = () => {
       try {
         const res = await fetch(BASE_API_URL);
         const data = await res.json();
-        setTokens(data.pairs || []);
+        setTokens(data || []);
 
         console.log(data);
         
@@ -104,37 +104,37 @@ const DeFiTable = () => {
         >
           {tokens.slice(0, 25).map((pair) => (
             <tr
-              key={pair.pairAddress}
+              key={pair.tokenAddress}
               className={isDark ? "hover:bg-gray-700" : "hover:bg-gray-50"}
             >
               <td className="px-4 py-3 flex items-center space-x-2">
-                {pair.info?.imageUrl && (
+                {pair && (
                   <img
-                    src={pair.info.imageUrl}
-                    alt={pair.baseToken.symbol}
+                    src={pair?.icon}
+                    alt={pair?.description}
                     className="w-6 h-6 rounded-full"
                   />
                 )}
-                <span>{pair.baseToken.name}</span>
+                <span>{pair.tokenAddress}</span>
               </td>
-              <td className="px-4 py-3">{pair.baseToken.symbol}</td>
+              <td className="px-4 py-3">{pair?.baseToken?.symbol}</td>
               <td className="px-4 py-3 font-mono">
-                ${parseFloat(pair.priceUsd).toFixed(4)}
-              </td>
-              <td className="px-4 py-3 font-mono">
-                ${Number(pair.liquidity?.usd || 0).toLocaleString()}
+                ${parseFloat(pair?.priceUsd).toFixed(4)}
               </td>
               <td className="px-4 py-3 font-mono">
-                ${Number(pair.volume?.h24 || 0).toLocaleString()}
+                ${Number(pair?.liquidity?.usd || 0).toLocaleString()}
               </td>
               <td className="px-4 py-3 font-mono">
-                {pair.marketCap
+                ${Number(pair?.volume?.h24 || 0).toLocaleString()}
+              </td>
+              <td className="px-4 py-3 font-mono">
+                {pair?.marketCap
                   ? `$${Number(pair.marketCap).toLocaleString()}`
                   : "-"}
               </td>
               <td className="px-4 py-3">
                 <a
-                  href={pair.url}
+                  href={pair?.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
