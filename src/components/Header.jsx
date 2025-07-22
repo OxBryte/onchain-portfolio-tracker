@@ -9,7 +9,7 @@ import {
 } from "@web3modal/ethers/react";
 
 // WalletConnect configuration
-const projectId = import.meta.env.REACT_APP_WALLETCONNECT_PROJECT_ID || "YOUR_PROJECT_ID";
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "YOUR_PROJECT_ID";
 
 const metadata = {
   name: "Portfolio Tracker",

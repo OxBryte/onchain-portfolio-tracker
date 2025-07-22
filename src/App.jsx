@@ -7,7 +7,7 @@ import "./App.css";
 import { createWeb3Modal, defaultConfig } from "@web3modal/ethers/react";
 
 // Configuration (should match what's in Header.js)
-const projectId = import.meta.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
 console.log(projectId);
 
 

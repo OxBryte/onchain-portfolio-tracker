@@ -39,6 +39,14 @@ The app is privacy-first: no login required, and no custody of user funds.
 - **DeFi**: Placeholder for DeFi analytics (coming soon)
 - **Settings**: Theme toggle and preferences
 
+## Supported Chain
+
+- **Base**
+- **Celo**
+- **Ethereum**
+- **Optimism**
+- **Arbitrum**
+
 ## Product Requirements
 
 See the [Product Requirements Document (PRD)](./PRD.md) for detailed goals, features, and user stories.
