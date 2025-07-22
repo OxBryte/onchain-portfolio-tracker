@@ -4,6 +4,48 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { WalletProvider } from "./context/WalletContext";
 import "./App.css";
 
+import { createWeb3Modal, defaultConfig } from "@web3modal/ethers/react";
+
+// Configuration (should match what's in Header.js)
+const projectId = import.meta.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
+console.log(projectId);
+
+
+const metadata = {
+  name: "Portfolio Tracker",
+  description: "Crypto Portfolio Tracking App",
+  url: "https://your-app-domain.com",
+  icons: ["https://your-app-domain.com/icon.png"],
+};
+
+const chains = [
+  {
+    chainId: 1,
+    name: "Ethereum",
+    currency: "ETH",
+    explorerUrl: "https://etherscan.io",
+    rpcUrl: "https://cloudflare-eth.com",
+  },
+];
+
+const ethersConfig = defaultConfig({
+  metadata,
+  enableEIP6963: true,
+  enableInjected: true,
+  enableCoinbase: true,
+  rpcUrl: "https://cloudflare-eth.com",
+  defaultChainId: 1,
+});
+
+// Initialize Web3Modal
+createWeb3Modal({
+  ethersConfig,
+  chains,
+  projectId,
+  enableAnalytics: true,
+});
+
+
 function App() {
   const [loading, setLoading] = useState(true);
 
