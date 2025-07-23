@@ -1,47 +1,163 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import { useWalletContext } from "../context/WalletContext";
+import { useWalletConnection } from "../hooks/useWalletConnection";
 
 const Transactions = () => {
   const { isDark } = useTheme();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const {
+    account,
+    connectWallet,
+    isConnecting,
+    isConnected,
+    error: walletError
+  } = useWalletConnection();
+  
   const [loading, setLoading] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
+  const [transactionsData, setTransactionsData] = useState({}); // Store transactions by network
 
-  const {
-    isConnected,
-    walletAddress,
-    connectWallet,
-    getNetworkTransactions,
-    getSupportedNetworks,
-    formatAddress,
-    isLoading: walletLoading,
-    error: walletError,
-  } = useWalletContext();
-
-  const currentWalletAddress = searchParams.get("walletAddress");
-
-  // Auto-connect wallet if address is provided in URL
-  useEffect(() => {
-    if (currentWalletAddress && !isConnected && !walletLoading) {
-      setLoading(true);
-      connectWallet(currentWalletAddress).finally(() => {
-        setLoading(false);
-      });
-    }
-  }, [currentWalletAddress, isConnected, connectWallet, walletLoading]);
-
-  const handleSearchWallet = () => {
-    navigate("/?walletAddress=");
+  // Function to format the address for display (0x1234...5678)
+  const formatAddress = (address) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+  
+  // Get supported networks
+  const getSupportedNetworks = () => {
+    return ["ethereum", "base", "bnb", "arbitrum", "optimism", "celo"];
   };
 
-  // Show search prompt if no wallet address
-  if (!currentWalletAddress || (!isConnected && !loading)) {
+  // Fetch transactions from a specific blockchain network
+  const fetchNetworkTransactions = async (network, address) => {
+    if (!address) return [];
+    
+    setLoading(true);
+    try {
+      // Different API endpoints for each network
+      const apiEndpoints = {
+        ethereum: `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=YOUR_ETHERSCAN_API_KEY`,
+        base: `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=YOUR_BASESCAN_API_KEY`,
+        bnb: `https://api.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=YOUR_BSCSCAN_API_KEY`,
+        arbitrum: `https://api.arbiscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=YOUR_ARBISCAN_API_KEY`,
+        optimism: `https://api-optimistic.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=YOUR_OPTIMISM_ETHERSCAN_API_KEY`,
+        celo: `https://api.celoscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=YOUR_CELOSCAN_API_KEY`,
+      };
+      
+      // Mock data for development - replace with actual API call
+      // In production: const response = await fetch(apiEndpoints[network]);
+      // const data = await response.json();
+      
+      // Simulate API delay and return mock data
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const mockData = Array.from({ length: Math.floor(Math.random() * 20) + 1 }, (_, i) => ({
+        hash: `0x${Math.random().toString(16).substr(2, 40)}`,
+        from: Math.random() > 0.5 ? address.toLowerCase() : `0x${Math.random().toString(16).substr(2, 40)}`,
+        to: Math.random() > 0.5 ? address.toLowerCase() : `0x${Math.random().toString(16).substr(2, 40)}`,
+        value: (Math.random() * 10).toFixed(6),
+        gasUsed: Math.floor(Math.random() * 1000000),
+        gasPrice: Math.floor(Math.random() * 100) + 10,
+        status: Math.random() > 0.1 ? "confirmed" : Math.random() > 0.5 ? "pending" : "failed",
+        timestamp: Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000),
+        blockNumber: Math.floor(Math.random() * 10000000) + 1000000,
+        tokenSymbol: network === "ethereum" ? "ETH" : 
+                     network === "base" ? "ETH" :
+                     network === "bnb" ? "BNB" :
+                     network === "arbitrum" ? "ETH" :
+                     network === "optimism" ? "ETH" : "CELO"
+      }));
+      
+      return mockData;
+    } catch (error) {
+      console.error(`Error fetching transactions for ${network}:`, error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Get transactions for a specific network
+  const getNetworkTransactions = (network) => {
+    return transactionsData[network] || [];
+  };
+
+  // Fetch transactions from all networks when account changes
+  useEffect(() => {
+    const fetchAllNetworksTransactions = async () => {
+      if (!account) return;
+      
+      setLoading(true);
+      const networks = getSupportedNetworks();
+      const txData = {};
+      
+      for (const network of networks) {
+        const transactions = await fetchNetworkTransactions(network, account);
+        txData[network] = transactions;
+      }
+      
+      setTransactionsData(txData);
+      setLoading(false);
+    };
+    
+    if (isConnected && account) {
+      fetchAllNetworksTransactions();
+    }
+  }, [account, isConnected]);
+
+  // Get all transactions from all networks or filtered by network
+  const getAllTransactions = () => {
+    const allTransactions = [];
+    const networks = getSupportedNetworks();
+
+    networks.forEach((network) => {
+      if (selectedNetwork === "all" || selectedNetwork === network) {
+        const networkTransactions = getNetworkTransactions(network);
+        networkTransactions.forEach((tx) => {
+          // Determine transaction type
+          let type = "transfer";
+          if (tx.to === account?.toLowerCase()) {
+            type = "received";
+          } else if (tx.from === account?.toLowerCase()) {
+            type = "sent";
+          }
+
+          // Filter by type if selected
+          if (selectedType === "all" || selectedType === type) {
+            allTransactions.push({
+              ...tx,
+              network,
+              type,
+              // Enhanced display data
+              amount: tx.value || "0",
+              gasUsed: tx.gasUsed || "0",
+              gasPrice: tx.gasPrice || "0",
+              status: tx.status || "confirmed",
+              timestamp: tx.timestamp || Date.now(),
+              tokenSymbol: tx.tokenSymbol || "ETH"
+            });
+          }
+        });
+      }
+    });
+
+    // Sort by timestamp (newest first)
+    return allTransactions.sort((a, b) => b.timestamp - a.timestamp);
+  };
+
+  const allTransactions = getAllTransactions();
+  const networks = getSupportedNetworks();
+
+  // Pagination
+  const totalPages = Math.ceil(allTransactions.length / transactionsPerPage);
+  const startIndex = (currentPage - 1) * transactionsPerPage;
+  const endIndex = startIndex + transactionsPerPage;
+  const currentTransactions = allTransactions.slice(startIndex, endIndex);
+
+  // Show connect wallet UI if no wallet is connected
+  if (!isConnected) {
     return (
       <div className="space-y-6">
         <div
@@ -93,74 +209,52 @@ const Transactions = () => {
             No Wallet Connected
           </h3>
           <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Connect a wallet or search for an address to view transaction
-            history
+            Connect your wallet to view transaction history across multiple blockchains
           </p>
           <button
-            onClick={handleSearchWallet}
+            onClick={connectWallet}
+            disabled={isConnecting}
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
               isDark
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-500 hover:bg-blue-600 text-white"
             }`}
           >
-            Search Wallet Address
+            {isConnecting ? (
+              <div className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Connecting...
+              </div>
+            ) : (
+              "Connect Wallet"
+            )}
           </button>
         </div>
       </div>
     );
   }
 
-  // Get all transactions from all networks or filtered by network
-  const getAllTransactions = () => {
-    const allTransactions = [];
-    const networks = getSupportedNetworks();
-
-    networks.forEach((network) => {
-      if (selectedNetwork === "all" || selectedNetwork === network) {
-        const networkTransactions = getNetworkTransactions(network);
-        networkTransactions.forEach((tx) => {
-          // Determine transaction type
-          let type = "transfer";
-          if (tx.to === currentWalletAddress.toLowerCase()) {
-            type = "received";
-          } else if (tx.from === currentWalletAddress.toLowerCase()) {
-            type = "sent";
-          }
-
-          // Filter by type if selected
-          if (selectedType === "all" || selectedType === type) {
-            allTransactions.push({
-              ...tx,
-              network,
-              type,
-              // Enhanced display data
-              amount: tx.value || "0",
-              gasUsed: tx.gasUsed || "0",
-              gasPrice: tx.gasPrice || "0",
-              status: tx.status || "confirmed",
-              timestamp: tx.timestamp || Date.now(),
-            });
-          }
-        });
-      }
-    });
-
-    // Sort by timestamp (newest first)
-    return allTransactions.sort((a, b) => b.timestamp - a.timestamp);
-  };
-
-  const allTransactions = getAllTransactions();
-  const networks = getSupportedNetworks();
-
-  // Pagination
-  const totalPages = Math.ceil(allTransactions.length / transactionsPerPage);
-  const startIndex = (currentPage - 1) * transactionsPerPage;
-  const endIndex = startIndex + transactionsPerPage;
-  const currentTransactions = allTransactions.slice(startIndex, endIndex);
-
   // Show loading state
-  if (loading || walletLoading) {
+  if (loading || isConnecting) {
     return (
       <div className="space-y-6">
         <div
@@ -211,7 +305,7 @@ const Transactions = () => {
                 isDark ? "text-gray-300" : "text-gray-600"
               }`}
             >
-              Fetching transactions from blockchain...
+              Fetching transactions from multiple blockchains...
             </span>
           </div>
         </div>
@@ -327,6 +421,26 @@ const Transactions = () => {
     }
   };
 
+  // Get network badge color
+  const getNetworkColor = (network) => {
+    switch (network) {
+      case "ethereum":
+        return "bg-blue-100 text-blue-800";
+      case "base":
+        return "bg-blue-100 text-blue-800";
+      case "bnb":
+        return "bg-yellow-100 text-yellow-800";
+      case "arbitrum":
+        return "bg-purple-100 text-purple-800";
+      case "optimism":
+        return "bg-red-100 text-red-800";
+      case "celo":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div
@@ -344,7 +458,7 @@ const Transactions = () => {
               Transaction History
             </h1>
             <p className={isDark ? "text-gray-300" : "text-gray-600"}>
-              Transactions for wallet: {formatAddress(currentWalletAddress)}
+              Transactions for wallet: {formatAddress(account)}
             </p>
           </div>
           <div className="text-right">
@@ -542,7 +656,7 @@ const Transactions = () => {
                                 isDark ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
-                              {tx.from === currentWalletAddress.toLowerCase()
+                              {tx.from === account?.toLowerCase()
                                 ? `To: ${formatAddressDisplay(tx.to)}`
                                 : `From: ${formatAddressDisplay(tx.from)}`}
                             </div>
@@ -565,7 +679,7 @@ const Transactions = () => {
                           )}`}
                         >
                           {tx.type === "sent" ? "-" : "+"}
-                          {parseFloat(tx.amount).toFixed(4)} ETH
+                          {parseFloat(tx.amount).toFixed(4)} {tx.tokenSymbol}
                         </div>
                         <div
                           className={`text-xs ${
@@ -577,7 +691,7 @@ const Transactions = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800`}
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getNetworkColor(tx.network)}`}
                         >
                           {tx.network.toUpperCase()}
                         </span>
@@ -717,7 +831,7 @@ const Transactions = () => {
                 isDark ? "text-gray-500" : "text-gray-400"
               }`}
             >
-              Supported networks: {networks.join(", ")}
+              Supported networks: {networks.map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(", ")}
             </p>
           </div>
         </div>
