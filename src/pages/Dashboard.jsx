@@ -1,28 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import { useWalletContext } from "../context/WalletContext";
+import { useWalletConnection } from "../hooks/useWalletConnection";
 
 const Dashboard = () => {
   const { isDark } = useTheme();
+  const {
+    account,
+    connectWallet,
+    disconnectWallet,
+    isConnected,
+    isConnecting,
+    error: walletError,
+  } = useWalletConnection();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [walletAddress, setWalletAddress] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-
-  const {
-    connectWallet,
-    disconnectWallet,
-    isConnected,
-    isLoading: walletLoading,
-    error: walletError,
-    portfolio,
-    getTotalValue,
-    getNetworkBalance,
-    getSupportedNetworks,
-    isValidAddress,
-    formatAddress,
-  } = useWalletContext();
 
   const currentWalletAddress = searchParams.get("walletAddress");
 
@@ -69,8 +63,14 @@ const Dashboard = () => {
     navigate("/");
   };
 
-  // Show search form if no wallet address
-  if (!currentWalletAddress) {
+  // Function to format the address for display (0x1234...5678)
+  const formatAddress = (address) => {
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Show connect wallet UI if no wallet is connected
+  if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className={`w-full`}>
@@ -108,66 +108,21 @@ const Dashboard = () => {
                 isDark ? "text-gray-300" : "text-gray-600"
               }`}
             >
-              Enter a wallet address to view portfolio details
+              Connect your wallet to view portfolio details
             </p>
           </div>
 
-          <form onSubmit={handleSearch} className="space-y-6">
-            <div>
-              <label
-                htmlFor="walletAddress"
-                className={`block text-sm font-semibold mb-3 uppercase tracking-wide ${
-                  isDark ? "text-gray-300" : "text-gray-700"
-                }`}
-              >
-                Wallet Address
-              </label>
-              <div className="relative">
-                <div
-                  className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  id="walletAddress"
-                  value={walletAddress}
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                  placeholder="0x..."
-                  className={`w-full pl-12 pr-4 py-4 rounded-xl border-2 focus:outline-none focus:ring-4 transition-all duration-200 ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
-                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500/20"
-                  }`}
-                  required
-                />
-              </div>
-            </div>
-
+          <div className="flex justify-center">
             <button
-              type="submit"
-              disabled={isSearching || !walletAddress.trim()}
-              className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 transform ${
-                isSearching || !walletAddress.trim()
+              onClick={connectWallet}
+              disabled={isConnecting}
+              className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 transform ${
+                isConnecting
                   ? "bg-gray-400 cursor-not-allowed scale-100"
                   : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
               } text-white`}
             >
-              {isSearching ? (
+              {isConnecting ? (
                 <div className="flex items-center justify-center">
                   <svg
                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -192,16 +147,23 @@ const Dashboard = () => {
                   Connecting...
                 </div>
               ) : (
-                "Search Portfolio"
+                "Connect Wallet"
               )}
             </button>
-          </form>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Show dashboard details when wallet address is provided
+  // Use these to track the portfolio data from the connected wallet
+  const portfolio = {}; // Replace with actual data from your context
+  const getTotalValue = () => 0; // Implement this function based on your data
+  const getSupportedNetworks = () => ["ethereum", "base", "polygon"]; // Example
+  const getNetworkBalance = () => null; // Implement this function
+  const isLoading = false; // Replace with actual loading state
+
+  // Show dashboard details when wallet is connected
   return (
     <div className="space-y-6">
       <div
@@ -219,26 +181,28 @@ const Dashboard = () => {
               Dashboard
             </h1>
             <p className={isDark ? "text-gray-300" : "text-gray-600"}>
-              Portfolio for wallet: {formatAddress(currentWalletAddress)}
+              Portfolio for wallet: {formatAddress(account)}
             </p>
             {walletError && (
               <p className="text-red-500 text-sm mt-2">{walletError}</p>
             )}
           </div>
-          <button
-            onClick={handleClear}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isDark
-                ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+              isDark ? "bg-gray-700" : "bg-gray-100"
             }`}
           >
-            Change Wallet
-          </button>
+            <span className={isDark ? "text-green-400" : "text-green-600"}>
+              Connected:
+            </span>
+            <span className={isDark ? "text-gray-200" : "text-gray-700"}>
+              {formatAddress(account)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {walletLoading ? (
+      {isLoading ? (
         <div
           className={`rounded-lg p-8 border text-center ${
             isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
