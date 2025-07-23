@@ -1,44 +1,77 @@
-import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
-import { useWalletContext } from "../context/WalletContext";
+import { useWalletConnection } from "../hooks/useWalletConnection";
 
 const NFTs = () => {
   const { isDark } = useTheme();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const {
+    account,
+    connectWallet,
+    isConnecting,
+    isConnected,
+    error: walletError,
+  } = useWalletConnection();
+
   const [selectedNetwork, setSelectedNetwork] = useState("all");
 
-  const {
-    isConnected,
-    walletAddress,
-    connectWallet,
-    getNetworkNFTs,
-    getSupportedNetworks,
-    formatAddress,
-    isLoading: walletLoading,
-    error: walletError,
-  } = useWalletContext();
-
-  const currentWalletAddress = searchParams.get("walletAddress");
-
-  // Auto-connect wallet if address is provided in URL
-  useEffect(() => {
-    if (currentWalletAddress && !isConnected && !walletLoading) {
-      setLoading(true);
-      connectWallet(currentWalletAddress).finally(() => {
-        setLoading(false);
-      });
-    }
-  }, [currentWalletAddress, isConnected, connectWallet, walletLoading]);
-
-  const handleSearchWallet = () => {
-    navigate("/?walletAddress=");
+  // Function to format the address for display (0x1234...5678)
+  const formatAddress = (address) => {
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  // Show search prompt if no wallet address
-  if (!currentWalletAddress || (!isConnected && !loading)) {
+  // These functions would need to be implemented to fetch actual NFT data
+  const getNetworkNFTs = (network) => {
+    // Placeholder function - replace with actual implementation
+    return [];
+  };
+
+  const getSupportedNetworks = () => {
+    // Placeholder function - replace with actual implementation
+    return ["ethereum", "base", "polygon", "optimism"];
+  };
+
+  // Get all NFTs from all networks or filtered by network
+  const getAllNFTs = () => {
+    if (!account) return [];
+
+    const allNFTs = [];
+    const networks = getSupportedNetworks();
+
+    networks.forEach((network) => {
+      if (selectedNetwork === "all" || selectedNetwork === network) {
+        const networkNFTs = getNetworkNFTs(network);
+        networkNFTs.forEach((nft) => {
+          allNFTs.push({
+            ...nft,
+            network,
+            // Enhanced metadata for display
+            name: nft.name || `NFT #${nft.tokenId}`,
+            collection:
+              nft.collection ||
+              `${
+                network.charAt(0).toUpperCase() + network.slice(1)
+              } Collection`,
+            image:
+              nft.image ||
+              `https://via.placeholder.com/300/6366f1/ffffff?text=${network.toUpperCase()}`,
+            floorPrice: nft.floorPrice || "0.1 ETH",
+            value: nft.value || "0.15 ETH",
+            rarity: nft.rarity || "Common",
+            attributes: nft.attributes || [],
+          });
+        });
+      }
+    });
+
+    return allNFTs;
+  };
+
+  const nfts = getAllNFTs();
+  const networks = getSupportedNetworks();
+
+  // Show connect wallet UI if no wallet is connected
+  if (!isConnected) {
     return (
       <div className="space-y-6">
         <div
@@ -90,62 +123,52 @@ const NFTs = () => {
             No Wallet Connected
           </h3>
           <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Connect a wallet or search for an address to view NFT collections
+            Connect your wallet to view your NFT collection
           </p>
           <button
-            onClick={handleSearchWallet}
+            onClick={connectWallet}
+            disabled={isConnecting}
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
               isDark
                 ? "bg-purple-600 hover:bg-purple-700 text-white"
                 : "bg-purple-500 hover:bg-purple-600 text-white"
             }`}
           >
-            Search Wallet Address
+            {isConnecting ? (
+              <div className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Connecting...
+              </div>
+            ) : (
+              "Connect Wallet"
+            )}
           </button>
         </div>
       </div>
     );
   }
 
-  // Get all NFTs from all networks or filtered by network
-  const getAllNFTs = () => {
-    const allNFTs = [];
-    const networks = getSupportedNetworks();
-
-    networks.forEach((network) => {
-      if (selectedNetwork === "all" || selectedNetwork === network) {
-        const networkNFTs = getNetworkNFTs(network);
-        networkNFTs.forEach((nft) => {
-          allNFTs.push({
-            ...nft,
-            network,
-            // Enhanced metadata for display
-            name: nft.name || `NFT #${nft.tokenId}`,
-            collection:
-              nft.collection ||
-              `${
-                network.charAt(0).toUpperCase() + network.slice(1)
-              } Collection`,
-            image:
-              nft.image ||
-              `https://via.placeholder.com/300/6366f1/ffffff?text=${network.toUpperCase()}`,
-            floorPrice: nft.floorPrice || "0.1 ETH",
-            value: nft.value || "0.15 ETH",
-            rarity: nft.rarity || "Common",
-            attributes: nft.attributes || [],
-          });
-        });
-      }
-    });
-
-    return allNFTs;
-  };
-
-  const nfts = getAllNFTs();
-  const networks = getSupportedNetworks();
-
   // Show loading state
-  if (loading || walletLoading) {
+  if (isConnecting) {
     return (
       <div className="space-y-6">
         <div
@@ -291,24 +314,20 @@ const NFTs = () => {
               NFT Gallery
             </h1>
             <p className={isDark ? "text-gray-300" : "text-gray-600"}>
-              NFTs for wallet: {formatAddress(currentWalletAddress)}
+              NFTs for wallet: {formatAddress(account)}
             </p>
           </div>
-          <div className="text-right">
-            <p
-              className={`text-sm ${
-                isDark ? "text-gray-400" : "text-gray-500"
-              }`}
-            >
-              Total NFTs
-            </p>
-            <p
-              className={`text-2xl font-bold ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}
-            >
-              {nfts.length}
-            </p>
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+              isDark ? "bg-gray-700" : "bg-gray-100"
+            }`}
+          >
+            <span className={isDark ? "text-green-400" : "text-green-600"}>
+              Connected:
+            </span>
+            <span className={isDark ? "text-gray-200" : "text-gray-700"}>
+              {formatAddress(account)}
+            </span>
           </div>
         </div>
       </div>
