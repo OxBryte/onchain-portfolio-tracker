@@ -6,7 +6,7 @@ A web application to seamlessly track, analyze, and manage your onchain crypto a
 
 The Onchain Portfolio Tracker enables users to:
 
-- Connect their crypto wallets or enter public addresses
+- Connect their crypto wallets directly through MetaMask/wallet providers
 - View real-time portfolio valuation across supported blockchains
 - Analyze asset allocation, historical performance, and DeFi positions
 - Explore NFT holdings with images and metadata
@@ -17,35 +17,48 @@ The app is privacy-first: no login required, and no custody of user funds.
 
 ## Current Features
 
-- **Multi-chain support**: Ethereum, Base, Polygon, Arbitrum, Optimism
-- **Wallet integration**: Connect via public address (MetaMask/WalletConnect planned)
+- **Multi-chain support**: Ethereum, Base, Polygon, Arbitrum, Optimism, Celo, BNB Chain
+- **Direct wallet integration**: Connect seamlessly via browser wallet extensions like MetaMask
+- **Unified wallet connection**: Consistent wallet connection experience across all pages
 - **Dashboard**: Real-time balances, network breakdown, and portfolio value
 - **NFT Gallery**: View NFTs from all supported chains, with filtering and metadata
 - **Transaction History**: Paginated, filterable transaction table across all chains
-- **DeFi (MVP)**: Placeholder for DeFi positions and analytics
+- **DeFi Positions**: Track DeFi tokens and pairs on Base blockchain with DEX Screener integration
 - **Settings**: Light/dark theme toggle, preferences
 - **Responsive UI**: Modern, mobile-friendly design
 - **Loading/Error States**: User-friendly feedback for all blockchain operations
 - **Auto-refresh**: Portfolio data updates every 30 seconds
 - **Network Filtering**: Filter NFTs and transactions by blockchain
 - **Pagination**: For large transaction lists
-- **DEFI**: Dexscreener Data and token pool
+- **Cross-chain Transactions**: View transactions from multiple blockchains in a single interface
 
 ## Main Pages
 
-- **Dashboard**: Portfolio overview, balances, and network stats
-- **NFTs**: NFT gallery with network and attribute filtering
-- **Transactions**: Transaction history with filters and pagination
-- **DeFi**: Placeholder for DeFi analytics (coming soon)
+- **Dashboard**: Portfolio overview, balances, and network stats directly from connected wallet
+- **NFTs**: NFT gallery with network and attribute filtering for the connected wallet
+- **Transactions**: Multi-chain transaction history with filters and pagination
+- **DeFi**: Track DeFi tokens and pairs on Base with the connected wallet
 - **Settings**: Theme toggle and preferences
 
-## Supported Chain
+## Supported Chains
 
-- **Base**
-- **Celo**
 - **Ethereum**
-- **Optimism**
+- **Base**
+- **BNB Chain**
+- **Polygon**
 - **Arbitrum**
+- **Optimism**
+- **Celo**
+
+## Recent Updates
+
+- **July 2025**: 
+  - Implemented direct wallet connection across all pages (Dashboard, NFTs, Transactions, DeFi)
+  - Removed address search functionality in favor of direct wallet integration
+  - Added multi-chain transaction tracking with filtering capabilities
+  - Enhanced wallet connection UI with consistent connected address display
+  - Improved error handling and loading states for blockchain operations
+  - Added transaction filtering by network and transaction type
 
 ## Product Requirements
 
